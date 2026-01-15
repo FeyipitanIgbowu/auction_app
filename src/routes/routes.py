@@ -1,51 +1,53 @@
-from flask import Blueprint, request, redirect, jsonify, render_template
-from app.db import Database
-from app.repositories import URLRepository
-from app.services import URLService
+auction_blue_print = Blueprint("auction", __name__)
 
-bp = Blueprint('main', __name__)
+def get_db_session():
+    return db.session
 
-db = Database()
-repository = URLRepository(db)
-service = URLService(repository)
+@auction_blue_print.route("/", methods=["POST"])
+def create_auction():
+    data = request.get_json()
+    title = data.get("title")
+    starting_price = data.get("starting_price")
 
+    service = AuctionService(get_db_session())
+    auction = service.create_auction(title, starting_price)
 
-@bp.route('/api/shorten', methods=['POST'])
-def shorten():
-    data = request.get_json() or {}
-    original_url = data.get('url')
-    if not original_url:
-        return jsonify({"error": "Please provide a URL"}), 400
+    return jsonify({
+        "auction_id": auction.id,
+        "title" : auction.title,
+        "starting_price" : auction.starting_price,
+        "is_active": auction.is_active,
+        "starting_time": auction.starting_time.isoformat(),
+    })
+
+@auction_blue_print.route("/auctions/<int:auction_id>/bids", methods=["POST"])
+def place_bid(auction_id):
+    data = request.get_json()
+    user_id = data.get("user_id")
+    amount = data.get("amount")
+
+    db = get_db_session()
+    user = db.query(User).get(user_id)
+    service = AuctionService(db, auction_id)
 
     try:
-        short_id = service.shorten_url(original_url)
-        short_url = request.host_url.rstrip('/') + '/' + short_id
-        return jsonify({"short_url": short_url, "short_id": short_id}), 201
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        bid = service.place_bid(amount, user)
+    except ValueError as e:
+        return jsonify({"Error..": str(e)}),
 
+    return jsonify({
+        "bid_id": bid.id,
+        "amount": bid.amount,
+        "user_id": bid.user_id,
+        "auction_id": bid.auction_id,
+    })
 
-@bp.route('/<short_id>')
-def redirect_to_url(short_id):
-    original_url = service.get_original_url(short_id)
-    if original_url:
-        return redirect(original_url)
-    return "URL not found", 404
+@auction_blue_print.route("/auctions/<int:auction_id>", methods=["GET"])
+def get_auction_details(auction_id):
+    service = AuctionService(get_db_session(), auction_id)
+    try:
+        auction_details = service.get_auction_details()
+    except ValueError as e:
+        return jsonify({"Error..": str(e)}),
 
-
-@bp.route('/', methods=['GET', 'POST'])
-def index():
-    short_url = None
-    error = None
-    if request.method == 'POST':
-        original_url = request.form.get('url')
-        if not original_url:
-            error = 'Please provide a URL'
-        else:
-            try:
-                short_id = service.shorten_url(original_url)
-                short_url = request.host_url.rstrip('/') + '/' + short_id
-            except Exception as e:
-                error = str(e)
-
-    return render_template('index.html', short_url=short_url, error=error)
+    return jsonify({auction_details})
