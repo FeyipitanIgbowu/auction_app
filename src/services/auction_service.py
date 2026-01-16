@@ -1,3 +1,10 @@
+from src.models.auction import Auction
+from src.models.user import User
+from src.models.bid import Bid
+from datetime import datetime
+from src.database.database import db
+
+
 class AuctionService:
     def __init__(self, db_session, auction_id=None):
         self.db = db_session
@@ -8,29 +15,31 @@ class AuctionService:
             title=title,
             starting_price=starting_price,
             is_active=True,
-            starting_time=datetime.now(),
+            start_time=datetime.now(),
         )
         self.db.add(auction)
         self.db.commit()
         self.auction_id = auction.id
         return auction
 
-    def place_bid(self, user, amount):
-        auction = Auction.query.get(self.auction_id)
+    def place_bid(self, amount, user):
+        auction = self.db.get(Auction, self.auction_id)
         if not auction:
             raise ValueError("Auction does not exist")
         if not auction.is_active:
             raise ValueError("Auction is closed")
-        if amount <= auction.get_highest_bid():
-            raise ValueError("Bid must be higher than current highest bid")
 
-        bid = Bid(amount=amount, user=user, auction=auction)
+        highest_bid_amount = auction.get_highest_bid()
+        if amount <= highest_bid_amount:
+            raise ValueError("Bid must be higher than current bid")
+
+        bid = Bid(amount=amount, user=user, auction_id=self.auction_id)
         self.db.add(bid)
         self.db.commit()
         return bid
 
     def get_auction_details(self):
-        auction = Auction.query.get(self.auction_id)
+        auction = self.db.get(Auction, self.auction_id)
         if not auction:
             raise ValueError("Auction does not exist")
 
@@ -41,3 +50,10 @@ class AuctionService:
             "is_active": auction.is_active,
             "highest_bid": auction.get_highest_bid()
         }
+
+    def get_highest_bidder(self):
+        auction = self.db.get(Auction, self.auction_id)
+        if not auction or not auction.bids:
+            return None
+        return auction.get_highest_bid()
+

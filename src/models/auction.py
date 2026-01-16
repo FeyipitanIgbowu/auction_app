@@ -1,4 +1,7 @@
+from src.database.database import db
+
 class Auction(db.Model):
+    __tablename__ = 'auction'
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String(100))
     starting_price = db.Column(db.Float)
@@ -11,8 +14,8 @@ class Auction(db.Model):
     def get_highest_bid(self):
         if not self.bids:
             return self.starting_price
-        highest_bid = max(self.bids, key=lambda b: b.amount)
-        return highest_bid.amount, highest_bid.created_at
+        highest_bid = max(self.bids, key=lambda bid: bid.amount)
+        return highest_bid.amount
 
     # def close_auction(self):
     #     self.is_active = False
