@@ -1,5 +1,4 @@
 from src.database.database import db
-from datetime import datetime
 
 class Bid(db.Model):
     __tablename__ = 'bids'

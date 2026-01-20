@@ -2,7 +2,6 @@ from tkinter.font import names
 
 import pytest
 from flask import Flask
-from flask_sqlalchemy import SQLAlchemy
 from src.routes.routes import auction_blueprint
 from src.database.database import db
 from src.models.auction import Auction
@@ -148,3 +147,5 @@ def test_that_you_cannot_access_a_nonexistent_auction(client, session):
     assert response.status_code == 404
     data = response.get_json()
     assert "Auction does not exist" in data["error"]
+
+
