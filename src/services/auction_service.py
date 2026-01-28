@@ -3,15 +3,13 @@ from src.models.user import User
 from src.models.bid import Bid
 from datetime import datetime
 from src.database.database import db
-import sched, time
-import threading
+
 
 
 class AuctionService:
     def __init__(self, db_session, auction_id=None):
         self.db = db_session
         self.auction_id = auction_id
-        self.scheduler = sched.scheduler(time.time, time.sleep)
 
 
     def create_auction(self, title, starting_price):
@@ -24,9 +22,6 @@ class AuctionService:
         self.db.add(auction)
         self.db.commit()
         self.auction_id = auction.id
-
-        self.scheduler.enter(600, 1, self.end_auction, argument=(auction.id))
-        threading.Thread(target=self.scheduler.run, daemon=True).start()
         return auction
 
     def place_bid(self, amount, user):

@@ -20,3 +20,6 @@ class BidResponse(BaseModel):
 class UserResponse(BaseModel):
     id: int
     username: str
+
+class LogInResponse(BaseModel):
+

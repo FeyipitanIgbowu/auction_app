@@ -11,3 +11,15 @@ class BidRequest(BaseModel):
 class UserRequest(BaseModel):
     username: str
     password: str
+
+class LogInRequest(BaseModel):
+    username: str
+    password: str
+
+class SignUpRequest(BaseModel):
+    name: str
+    email: str
+    phone_number: str
+    address: str
+    username: str
+    password: str
